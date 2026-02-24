@@ -41,6 +41,7 @@ class RecurringViewModel @Inject constructor(
                     dayOfMonth = dayOfMonth,
                 )
             )
+            repository.generateRecurringTasksForToday()
         }
     }
 
@@ -61,12 +62,14 @@ class RecurringViewModel @Inject constructor(
                     dayOfMonth = dayOfMonth,
                 )
             )
+            repository.generateRecurringTasksForToday()
         }
     }
 
     fun toggleActive(rule: RecurringTask) {
         viewModelScope.launch {
             repository.updateRecurringTask(rule.copy(isActive = !rule.isActive))
+            repository.generateRecurringTasksForToday()
         }
     }
 
