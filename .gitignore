@@ -1,1 +1,16 @@
 advance_day.sh
+
+# Gradle
+.gradle/
+build/
+local.properties
+
+# Android Studio
+*.iml
+.idea/
+captures/
+
+# Keystore
+keystore.properties
+*.jks
+*.keystore
