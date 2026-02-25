@@ -19,3 +19,19 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# ── Widget ────────────────────────────────────────────────────────────────────
+
+# Keep all widget classes — R8 would otherwise strip/rename them and the
+# home screen launcher cannot instantiate the receiver or GlanceAppWidget.
+-keep class com.example.bullet.widget.** { *; }
+
+# Keep Glance base classes referenced by the widget
+-keep class * extends androidx.glance.appwidget.GlanceAppWidget { *; }
+-keep class * extends androidx.glance.appwidget.GlanceAppWidgetReceiver { *; }
+
+# ── Hilt EntryPoints ─────────────────────────────────────────────────────────
+
+# EntryPointAccessors.fromApplication() looks up the interface by class
+# reference at runtime — renaming it breaks the lookup.
+-keep @dagger.hilt.EntryPoint interface * { *; }
