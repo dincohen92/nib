@@ -73,101 +73,97 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
     var selectedTask by remember { mutableStateOf<Task?>(null) }
     var swipeDeltaX by remember { mutableFloatStateOf(0f) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { viewModel.refresh() },
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectHorizontalDragGestures(
-                        onDragEnd = {
-                            if (swipeDeltaX > 150f) viewModel.cycleViewMode(forward = false)
-                            else if (swipeDeltaX < -150f) viewModel.cycleViewMode(forward = true)
-                            swipeDeltaX = 0f
-                        },
-                        onDragCancel = { swipeDeltaX = 0f },
-                        onHorizontalDrag = { _, delta -> swipeDeltaX += delta },
-                    )
-                },
-        ) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-            // Header
-            item {
-                CalendarHeader(
-                    selectedDate = selectedDate,
-                    viewMode = viewMode,
-                    onPrev = { viewModel.navigatePeriod(false) },
-                    onNext = { viewModel.navigatePeriod(true) },
-                    onToday = { viewModel.goToToday() },
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        if (swipeDeltaX > 150f) viewModel.cycleViewMode(forward = false)
+                        else if (swipeDeltaX < -150f) viewModel.cycleViewMode(forward = true)
+                        swipeDeltaX = 0f
+                    },
+                    onDragCancel = { swipeDeltaX = 0f },
+                    onHorizontalDrag = { _, delta -> swipeDeltaX += delta },
                 )
-            }
+            },
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Sticky: date navigation header
+            CalendarHeader(
+                selectedDate = selectedDate,
+                viewMode = viewMode,
+                onPrev = { viewModel.navigatePeriod(false) },
+                onNext = { viewModel.navigatePeriod(true) },
+                onToday = { viewModel.goToToday() },
+            )
 
-            // Tab strip
-            item {
-                CalendarTabStrip(
-                    viewMode = viewMode,
-                    onSelect = { viewModel.setViewMode(it) },
-                )
-            }
+            // Sticky: tab strip
+            CalendarTabStrip(
+                viewMode = viewMode,
+                onSelect = { viewModel.setViewMode(it) },
+            )
 
-            // Grid (WEEK or MONTH) — omitted in DAY mode
+            // Sticky: week or month grid
             if (viewMode == ViewMode.WEEK) {
-                item {
-                    WeekGrid(
-                        selectedDate = selectedDate,
-                        countsByDate = countsByDate,
-                        onSelectDate = { viewModel.selectDate(it) },
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(top = 4.dp),
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
+                WeekGrid(
+                    selectedDate = selectedDate,
+                    countsByDate = countsByDate,
+                    onSelectDate = { viewModel.selectDate(it) },
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(top = 4.dp),
+                    color = MaterialTheme.colorScheme.outline,
+                )
             } else if (viewMode == ViewMode.MONTH) {
-                item {
-                    MonthGrid(
-                        selectedDate = selectedDate,
-                        countsByDate = countsByDate,
-                        onSelectDate = { viewModel.selectDate(it) },
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(top = 4.dp),
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
+                MonthGrid(
+                    selectedDate = selectedDate,
+                    countsByDate = countsByDate,
+                    onSelectDate = { viewModel.selectDate(it) },
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(top = 4.dp),
+                    color = MaterialTheme.colorScheme.outline,
+                )
             }
 
-            // Task list or empty state
-            if (tasks.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 48.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            "Nothing scheduled",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+
+            // Scrollable: task list only
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { viewModel.refresh() },
+                modifier = Modifier.weight(1f),
+            ) {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    if (tasks.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 48.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    "Nothing scheduled",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    } else {
+                        items(tasks, key = { it.id }) { task ->
+                            TaskRow(
+                                task = task,
+                                onBulletClick = { viewModel.cycleStatus(task) },
+                                onLongClick = { selectedTask = task },
+                            )
+                        }
                     }
-                }
-            } else {
-                items(tasks, key = { it.id }) { task ->
-                    TaskRow(
-                        task = task,
-                        onBulletClick = { viewModel.cycleStatus(task) },
-                        onLongClick = { selectedTask = task },
-                    )
+                    item { Spacer(modifier = Modifier.height(80.dp)) }
                 }
             }
-
-            // Bottom padding so FAB doesn't cover last item
-            item { Spacer(modifier = Modifier.height(80.dp)) }
         }
-        } // end PullToRefreshBox
 
         FloatingActionButton(
             onClick = { showAddSheet = true },
@@ -228,6 +224,9 @@ private fun CalendarHeader(
             .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        TextButton(onClick = onToday) {
+            Text("Today")
+        }
         IconButton(onClick = onPrev) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous")
         }
@@ -237,9 +236,6 @@ private fun CalendarHeader(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.weight(1f),
         )
-        TextButton(onClick = onToday) {
-            Text("Today")
-        }
         IconButton(onClick = onNext) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next")
         }
