@@ -113,6 +113,12 @@ class CalendarViewModel @Inject constructor(
         viewMode.value = mode
     }
 
+    fun cycleViewMode(forward: Boolean) {
+        val modes = ViewMode.entries
+        val idx = modes.indexOf(viewMode.value)
+        viewMode.value = modes[(idx + if (forward) 1 else -1).coerceIn(0, modes.lastIndex)]
+    }
+
     fun navigatePeriod(forward: Boolean) {
         val delta = if (forward) 1L else -1L
         selectedDate.value = when (viewMode.value) {

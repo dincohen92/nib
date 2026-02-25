@@ -3,6 +3,7 @@ package com.example.bullet.ui.calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,12 +35,14 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -68,12 +71,25 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
 
     var showAddSheet by remember { mutableStateOf(false) }
     var selectedTask by remember { mutableStateOf<Task?>(null) }
+    var swipeDeltaX by remember { mutableFloatStateOf(0f) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = { viewModel.refresh() },
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            if (swipeDeltaX > 150f) viewModel.cycleViewMode(forward = false)
+                            else if (swipeDeltaX < -150f) viewModel.cycleViewMode(forward = true)
+                            swipeDeltaX = 0f
+                        },
+                        onDragCancel = { swipeDeltaX = 0f },
+                        onHorizontalDrag = { _, delta -> swipeDeltaX += delta },
+                    )
+                },
         ) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
             // Header
