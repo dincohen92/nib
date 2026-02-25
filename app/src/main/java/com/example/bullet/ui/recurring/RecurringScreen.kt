@@ -15,14 +15,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,7 +31,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -57,6 +52,8 @@ import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
 import androidx.compose.foundation.ExperimentalFoundationApi
+
+private enum class MonthlyMode { OnDay, OnThe }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -103,8 +100,8 @@ fun RecurringScreen(viewModel: RecurringViewModel = hiltViewModel()) {
         RecurringTaskSheet(
             existing = null,
             onDismiss = { showAddSheet = false },
-            onSave = { title, freq, dow, dom ->
-                viewModel.add(title, freq, dow, dom)
+            onSave = { title, freq, dow, dom, ord, mwd ->
+                viewModel.add(title, freq, dow, dom, ord, mwd)
                 showAddSheet = false
             },
         )
@@ -114,8 +111,8 @@ fun RecurringScreen(viewModel: RecurringViewModel = hiltViewModel()) {
         RecurringTaskSheet(
             existing = rule,
             onDismiss = { editingRule = null },
-            onSave = { title, freq, dow, dom ->
-                viewModel.save(rule, title, freq, dow, dom)
+            onSave = { title, freq, dow, dom, ord, mwd ->
+                viewModel.save(rule, title, freq, dow, dom, ord, mwd)
                 editingRule = null
             },
         )
@@ -181,13 +178,19 @@ private fun RecurringRuleRow(
 private fun RecurringTaskSheet(
     existing: RecurringTask?,
     onDismiss: () -> Unit,
-    onSave: (title: String, frequency: Frequency, dayOfWeek: Int?, dayOfMonth: Int?) -> Unit,
+    onSave: (title: String, frequency: Frequency, dayOfWeek: Int?, dayOfMonth: Int?, monthlyOrdinal: Int?, monthlyWeekDay: Int?) -> Unit,
 ) {
     var title by remember { mutableStateOf(existing?.title ?: "") }
     var frequency by remember { mutableStateOf(existing?.frequency ?: Frequency.DAILY) }
     var selectedDow by remember { mutableIntStateOf(existing?.dayOfWeek ?: 5) } // Fri default
     var selectedDom by remember { mutableIntStateOf(existing?.dayOfMonth ?: 1) }
-    var showDomPicker by remember { mutableStateOf(false) }
+    var monthlyMode by remember {
+        mutableStateOf(
+            if (existing?.monthlyOrdinal != null) MonthlyMode.OnThe else MonthlyMode.OnDay
+        )
+    }
+    var selectedOrdinal by remember { mutableIntStateOf(existing?.monthlyOrdinal ?: 1) }
+    var selectedMonthlyDow by remember { mutableIntStateOf(existing?.monthlyWeekDay ?: 1) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
@@ -212,8 +215,11 @@ private fun RecurringTaskSheet(
             )
 
             // Frequency selector
-            Text("Repeat", style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "Repeat",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Frequency.entries.forEach { freq ->
                     FilterChip(
@@ -228,8 +234,11 @@ private fun RecurringTaskSheet(
 
             // Day-of-week picker (Weekly)
             if (frequency == Frequency.WEEKLY) {
-                Text("Day", style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Day",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     (1..7).forEach { dow ->
                         val label = DayOfWeek.of(dow)
@@ -243,17 +252,87 @@ private fun RecurringTaskSheet(
                 }
             }
 
-            // Day-of-month picker (Monthly)
+            // Monthly picker with two sub-modes
             if (frequency == Frequency.MONTHLY) {
-                Text("Day of month", style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                AssistChip(
-                    onClick = { showDomPicker = true },
-                    label = { Text(ordinal(selectedDom)) },
-                    trailingIcon = {
-                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                    },
+                Text(
+                    "Schedule",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = monthlyMode == MonthlyMode.OnDay,
+                        onClick = { monthlyMode = MonthlyMode.OnDay },
+                        label = { Text("On day") },
+                    )
+                    FilterChip(
+                        selected = monthlyMode == MonthlyMode.OnThe,
+                        onClick = { monthlyMode = MonthlyMode.OnThe },
+                        label = { Text("On the") },
+                    )
+                }
+
+                if (monthlyMode == MonthlyMode.OnDay) {
+                    // 5-row × 7-col inline grid for days 1–31
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        (0..4).forEach { row ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                            ) {
+                                (1..7).forEach { col ->
+                                    val day = row * 7 + col
+                                    if (day <= 31) {
+                                        DayCell(
+                                            day = day,
+                                            isSelected = day == selectedDom,
+                                            onClick = { selectedDom = day },
+                                        )
+                                    } else {
+                                        Box(modifier = Modifier.size(36.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Ordinal picker
+                    val ordinalOptions = listOf(
+                        1 to "1st", 2 to "2nd", 3 to "3rd", 4 to "4th", -1 to "Last",
+                    )
+                    Text(
+                        "Which",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        ordinalOptions.forEach { (value, label) ->
+                            FilterChip(
+                                selected = selectedOrdinal == value,
+                                onClick = { selectedOrdinal = value },
+                                label = { Text(label) },
+                            )
+                        }
+                    }
+
+                    // Day-of-week picker
+                    Text(
+                        "Day",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        (1..7).forEach { dow ->
+                            val label = DayOfWeek.of(dow)
+                                .getDisplayName(TextStyle.SHORT, Locale.getDefault())
+                            FilterChip(
+                                selected = selectedMonthlyDow == dow,
+                                onClick = { selectedMonthlyDow = dow },
+                                label = { Text(label) },
+                            )
+                        }
+                    }
+                }
             }
 
             Button(
@@ -262,7 +341,9 @@ private fun RecurringTaskSheet(
                         title,
                         frequency,
                         if (frequency == Frequency.WEEKLY) selectedDow else null,
-                        if (frequency == Frequency.MONTHLY) selectedDom else null,
+                        if (frequency == Frequency.MONTHLY && monthlyMode == MonthlyMode.OnDay) selectedDom else null,
+                        if (frequency == Frequency.MONTHLY && monthlyMode == MonthlyMode.OnThe) selectedOrdinal else null,
+                        if (frequency == Frequency.MONTHLY && monthlyMode == MonthlyMode.OnThe) selectedMonthlyDow else null,
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -271,14 +352,6 @@ private fun RecurringTaskSheet(
                 Text(if (existing == null) "Add" else "Save")
             }
         }
-    }
-
-    if (showDomPicker) {
-        DayOfMonthPickerDialog(
-            selected = selectedDom,
-            onSelect = { selectedDom = it; showDomPicker = false },
-            onDismiss = { showDomPicker = false },
-        )
     }
 }
 
@@ -324,55 +397,6 @@ private fun RecurringActionSheet(
             }
         }
     }
-}
-
-private fun ordinal(n: Int): String {
-    val suffix = when {
-        n in 11..13 -> "th"
-        n % 10 == 1 -> "st"
-        n % 10 == 2 -> "nd"
-        n % 10 == 3 -> "rd"
-        else -> "th"
-    }
-    return "$n$suffix"
-}
-
-// ── Day-of-month grid dialog ──────────────────────────────────────────────────
-
-@Composable
-private fun DayOfMonthPickerDialog(
-    selected: Int,
-    onSelect: (Int) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
-        title = { Text("Day of month") },
-        text = {
-            // 4 rows × 7 columns = days 1-28
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                (0..3).forEach { row ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                    ) {
-                        (1..7).forEach { col ->
-                            val day = row * 7 + col
-                            DayCell(
-                                day = day,
-                                isSelected = day == selected,
-                                onClick = { onSelect(day) },
-                            )
-                        }
-                    }
-                }
-            }
-        },
-    )
 }
 
 @Composable

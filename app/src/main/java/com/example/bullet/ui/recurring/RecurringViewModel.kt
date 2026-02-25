@@ -30,6 +30,8 @@ class RecurringViewModel @Inject constructor(
         frequency: Frequency,
         dayOfWeek: Int? = null,
         dayOfMonth: Int? = null,
+        monthlyOrdinal: Int? = null,
+        monthlyWeekDay: Int? = null,
     ) {
         if (title.isBlank()) return
         viewModelScope.launch {
@@ -39,6 +41,8 @@ class RecurringViewModel @Inject constructor(
                     frequency = frequency,
                     dayOfWeek = dayOfWeek,
                     dayOfMonth = dayOfMonth,
+                    monthlyOrdinal = monthlyOrdinal,
+                    monthlyWeekDay = monthlyWeekDay,
                 )
             )
             repository.generateRecurringTasksForToday()
@@ -51,6 +55,8 @@ class RecurringViewModel @Inject constructor(
         frequency: Frequency,
         dayOfWeek: Int? = null,
         dayOfMonth: Int? = null,
+        monthlyOrdinal: Int? = null,
+        monthlyWeekDay: Int? = null,
     ) {
         if (title.isBlank()) return
         viewModelScope.launch {
@@ -60,6 +66,8 @@ class RecurringViewModel @Inject constructor(
                     frequency = frequency,
                     dayOfWeek = dayOfWeek,
                     dayOfMonth = dayOfMonth,
+                    monthlyOrdinal = monthlyOrdinal,
+                    monthlyWeekDay = monthlyWeekDay,
                 )
             )
             repository.generateRecurringTasksForToday()
