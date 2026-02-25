@@ -35,3 +35,18 @@
 # EntryPointAccessors.fromApplication() looks up the interface by class
 # reference at runtime — renaming it breaks the lookup.
 -keep @dagger.hilt.EntryPoint interface * { *; }
+
+# ── Room / Database ───────────────────────────────────────────────────────────
+
+# Keep enum constant NAMES (not just the classes). Converters.kt stores enum
+# values in the DB as their .name() string and reads them back with .valueOf().
+# If R8 renames TASK → a, BulletType.valueOf("TASK") throws at runtime in
+# release builds even though debug builds work fine (no obfuscation there).
+-keep enum com.example.bullet.data.db.** { *; }
+
+# Keep the TypeConverter class and its methods — Room's generated code calls
+# these directly; renaming breaks the DB layer used by the widget.
+-keep class com.example.bullet.data.db.Converters { *; }
+
+# Keep Room entity field names — they map to DB column names via annotations.
+-keep @androidx.room.Entity class * { *; }
