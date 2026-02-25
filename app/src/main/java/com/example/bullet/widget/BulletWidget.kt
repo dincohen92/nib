@@ -10,8 +10,6 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
-import androidx.glance.Image
-import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
@@ -26,7 +24,6 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
-import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
@@ -38,7 +35,6 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.example.bullet.MainActivity
-import com.example.bullet.R
 import com.example.bullet.data.db.Task
 import com.example.bullet.data.db.TaskStatus
 import com.example.bullet.di.WidgetEntryPoint
@@ -59,7 +55,6 @@ private data class WidgetColors(
     val textPrimary: Color,
     val textSecondary: Color,
     val divider: Color,
-    val iconRes: Int,
 )
 
 private fun resolveColors(context: Context): WidgetColors {
@@ -71,14 +66,12 @@ private fun resolveColors(context: Context): WidgetColors {
         textPrimary   = Color(0xFFF2EDE4),
         textSecondary = Color(0xFF9A9590),
         divider       = Color(0xFF2E2E2E),
-        iconRes       = R.drawable.nib_icon_white,
     ) else WidgetColors(
         bg            = Color(0xFFF2EDE4),
         surface       = Color(0xFFF7F3EC),
         textPrimary   = Color(0xFF1A1A1A),
         textSecondary = Color(0xFF6B6560),
         divider       = Color(0xFFD4CFC6),
-        iconRes       = R.drawable.nib_icon_black,
     )
 }
 
@@ -231,33 +224,23 @@ private fun LargeWidget(
                     )
                     Spacer(modifier = GlanceModifier.height(14.dp))
                 }
-                Row(
-                    modifier = GlanceModifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = GlanceModifier.defaultWeight()) {
-                        Text(
-                            text = dayOfWeek,
-                            style = TextStyle(
-                                color = ColorProvider(colors.textSecondary),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium,
-                            ),
-                        )
-                        Spacer(modifier = GlanceModifier.height(1.dp))
-                        Text(
-                            text = monthDay,
-                            style = TextStyle(
-                                color = ColorProvider(colors.textPrimary),
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                        )
-                    }
-                    Image(
-                        provider = ImageProvider(colors.iconRes),
-                        contentDescription = null,
-                        modifier = GlanceModifier.fillMaxHeight().width(36.dp),
+                Column(modifier = GlanceModifier.fillMaxWidth()) {
+                    Text(
+                        text = dayOfWeek,
+                        style = TextStyle(
+                            color = ColorProvider(colors.textSecondary),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                    )
+                    Spacer(modifier = GlanceModifier.height(1.dp))
+                    Text(
+                        text = monthDay,
+                        style = TextStyle(
+                            color = ColorProvider(colors.textPrimary),
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                        ),
                     )
                 }
             }
