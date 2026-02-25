@@ -11,7 +11,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -35,24 +34,10 @@ class CalendarViewModel @Inject constructor(
     val selectedDate = MutableStateFlow(LocalDate.now())
     val viewMode = MutableStateFlow(ViewMode.DAY)
 
-    private val _isRefreshing = MutableStateFlow(false)
-    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
-
     init {
         viewModelScope.launch {
             repository.migratePastOpenTasks()
             repository.generateRecurringTasksForToday()
-        }
-    }
-
-    fun refresh() {
-        viewModelScope.launch {
-            _isRefreshing.value = true
-            try {
-                repository.generateRecurringTasksForToday()
-            } finally {
-                _isRefreshing.value = false
-            }
         }
     }
 

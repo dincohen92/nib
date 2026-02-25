@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,7 +30,6 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,14 +58,12 @@ import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
     val tasks by viewModel.tasksForSelectedDate.collectAsStateWithLifecycle()
     val countsByDate by viewModel.taskCountsByDate.collectAsStateWithLifecycle()
-    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     var showAddSheet by remember { mutableStateOf(false) }
     var selectedTask by remember { mutableStateOf<Task?>(null) }
@@ -130,38 +126,32 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 
             // Scrollable: task list only
-            PullToRefreshBox(
-                isRefreshing = isRefreshing,
-                onRefresh = { viewModel.refresh() },
-                modifier = Modifier.weight(1f),
-            ) {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    if (tasks.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 48.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    "Nothing scheduled",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    } else {
-                        items(tasks, key = { it.id }) { task ->
-                            TaskRow(
-                                task = task,
-                                onBulletClick = { viewModel.cycleStatus(task) },
-                                onLongClick = { selectedTask = task },
+            LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                if (tasks.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                "Nothing scheduled",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
-                    item { Spacer(modifier = Modifier.height(80.dp)) }
+                } else {
+                    items(tasks, key = { it.id }) { task ->
+                        TaskRow(
+                            task = task,
+                            onBulletClick = { viewModel.cycleStatus(task) },
+                            onLongClick = { selectedTask = task },
+                        )
+                    }
                 }
+                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
         }
 
