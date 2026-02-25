@@ -50,3 +50,13 @@
 
 # Keep Room entity field names — they map to DB column names via annotations.
 -keep @androidx.room.Entity class * { *; }
+
+# ── WorkManager (used internally by Glance) ───────────────────────────────────
+
+# R8 strips the zero-arg constructor on InputMerger subclasses, causing
+# InstantiationException at runtime when Glance tries to schedule widget updates.
+-keep class * extends androidx.work.InputMerger { *; }
+-keep class * extends androidx.work.Worker { *; }
+-keep class * extends androidx.work.ListenableWorker {
+    public <init>(android.content.Context, androidx.work.WorkerParameters);
+}
