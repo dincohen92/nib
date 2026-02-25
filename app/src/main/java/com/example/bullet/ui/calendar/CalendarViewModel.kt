@@ -48,8 +48,11 @@ class CalendarViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
-            repository.generateRecurringTasksForToday()
-            _isRefreshing.value = false
+            try {
+                repository.generateRecurringTasksForToday()
+            } finally {
+                _isRefreshing.value = false
+            }
         }
     }
 
