@@ -27,7 +27,7 @@ android {
         applicationId = "com.dinco.nib"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
+        versionCode = 5
         versionName = "26.2.25"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
