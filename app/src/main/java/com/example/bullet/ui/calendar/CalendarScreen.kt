@@ -204,8 +204,16 @@ private fun CalendarHeader(
     onNext: () -> Unit,
     onToday: () -> Unit,
 ) {
+    val today = LocalDate.now()
+    val isToday = selectedDate == today
+
     val title = when (viewMode) {
-        ViewMode.DAY -> selectedDate.format(DateTimeFormatter.ofPattern("EEEE, MMMM d"))
+        ViewMode.DAY -> when (selectedDate) {
+            today -> "Today · ${today.format(DateTimeFormatter.ofPattern("MMM d"))}"
+            today.minusDays(1) -> "Yesterday · ${selectedDate.format(DateTimeFormatter.ofPattern("MMM d"))}"
+            today.plusDays(1) -> "Tomorrow · ${selectedDate.format(DateTimeFormatter.ofPattern("MMM d"))}"
+            else -> selectedDate.format(DateTimeFormatter.ofPattern("EEEE, MMMM d"))
+        }
         ViewMode.WEEK -> {
             val mon = selectedDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
             val sun = mon.plusDays(6)
@@ -225,7 +233,11 @@ private fun CalendarHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextButton(onClick = onToday) {
-            Text("Today")
+            Text(
+                "Today",
+                color = if (isToday) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        else MaterialTheme.colorScheme.primary,
+            )
         }
         IconButton(onClick = onPrev) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous")
