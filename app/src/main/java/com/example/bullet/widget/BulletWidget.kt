@@ -271,13 +271,18 @@ private fun LargeWidget(
                 )
             }
         } else {
-            items(tasks) { task -> WidgetTaskRow(task.content, colors) }
+            items(tasks) { task -> WidgetTaskRow(task, colors) }
         }
     }
 }
 
 @Composable
-private fun WidgetTaskRow(content: String, colors: WidgetColors) {
+private fun WidgetTaskRow(task: Task, colors: WidgetColors) {
+    val bullet = when (task.status) {
+        TaskStatus.OPEN   -> "◦"
+        TaskStatus.CLOSED -> "·"
+        TaskStatus.PUSHED -> ">"
+    }
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
@@ -286,16 +291,15 @@ private fun WidgetTaskRow(content: String, colors: WidgetColors) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "·",
+            text = bullet,
             style = TextStyle(
                 color = ColorProvider(colors.textPrimary),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
             ),
         )
         Spacer(modifier = GlanceModifier.width(8.dp))
         Text(
-            text = content,
+            text = task.content,
             style = TextStyle(color = ColorProvider(colors.textPrimary), fontSize = 13.sp),
             maxLines = 1,
             modifier = GlanceModifier.fillMaxWidth(),

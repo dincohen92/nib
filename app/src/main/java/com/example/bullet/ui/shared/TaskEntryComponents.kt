@@ -1,5 +1,6 @@
 package com.example.bullet.ui.shared
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -37,9 +38,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.bullet.data.db.Task
 import com.example.bullet.data.db.TaskStatus
 import java.time.Instant
@@ -67,17 +72,43 @@ fun TaskRow(
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
+        Canvas(
             modifier = Modifier
-                .size(28.dp)
+                .size(44.dp)
                 .clickable { onBulletClick() },
-            contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = task.bulletSymbol(),
-                fontSize = 20.sp,
-                color = bulletColor,
-            )
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val radius = 5.dp.toPx()
+            when (task.status) {
+                TaskStatus.OPEN -> drawCircle(
+                    color = bulletColor,
+                    radius = radius,
+                    center = center,
+                    style = Stroke(width = 1.5f.dp.toPx()),
+                )
+                TaskStatus.CLOSED -> drawCircle(
+                    color = bulletColor,
+                    radius = radius,
+                    center = center,
+                )
+                TaskStatus.PUSHED -> {
+                    val h = radius
+                    val w = radius * 0.55f
+                    drawPath(
+                        path = Path().apply {
+                            moveTo(center.x - w, center.y - h)
+                            lineTo(center.x + w, center.y)
+                            lineTo(center.x - w, center.y + h)
+                        },
+                        color = bulletColor,
+                        style = Stroke(
+                            width = 1.5f.dp.toPx(),
+                            cap = StrokeCap.Round,
+                            join = StrokeJoin.Round,
+                        ),
+                    )
+                }
+            }
         }
         Text(
             text = task.content,
@@ -261,8 +292,3 @@ fun AddEntrySheet(
     }
 }
 
-fun Task.bulletSymbol(): String = when (status) {
-    TaskStatus.OPEN   -> "·"
-    TaskStatus.PUSHED -> "→"
-    TaskStatus.CLOSED -> "×"
-}
