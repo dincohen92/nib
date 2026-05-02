@@ -21,16 +21,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -43,10 +47,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.bullet.data.db.JournalEntry
 import com.example.bullet.data.db.Task
 import com.example.bullet.ui.shared.AddEntrySheet
 import com.example.bullet.ui.shared.TaskActionSheet
@@ -64,10 +70,13 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
     val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
     val tasks by viewModel.tasksForSelectedDate.collectAsStateWithLifecycle()
     val countsByDate by viewModel.taskCountsByDate.collectAsStateWithLifecycle()
+    val journalEntries by viewModel.journalEntriesForSelectedDate.collectAsStateWithLifecycle()
 
     var showAddSheet by remember { mutableStateOf(false) }
     var selectedTask by remember { mutableStateOf<Task?>(null) }
     var swipeDeltaX by remember { mutableFloatStateOf(0f) }
+    var showJournalDialog by remember { mutableStateOf(false) }
+    var editingJournalEntry by remember { mutableStateOf<JournalEntry?>(null) }
 
     Box(
         modifier = Modifier
@@ -85,7 +94,6 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
             },
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Sticky: date navigation header
             CalendarHeader(
                 selectedDate = selectedDate,
                 viewMode = viewMode,
@@ -94,13 +102,11 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
                 onToday = { viewModel.goToToday() },
             )
 
-            // Sticky: tab strip
             CalendarTabStrip(
                 viewMode = viewMode,
                 onSelect = { viewModel.setViewMode(it) },
             )
 
-            // Sticky: week or month grid
             if (viewMode == ViewMode.WEEK) {
                 WeekGrid(
                     selectedDate = selectedDate,
@@ -125,18 +131,21 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 
-            // Scrollable: task list only
             LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                // Tasks section header
+                item(key = "tasks-header") {
+                    SectionLabel("Tasks")
+                }
+
                 if (tasks.isEmpty()) {
-                    item {
+                    item(key = "tasks-empty") {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 48.dp),
-                            contentAlignment = Alignment.Center,
+                                .padding(horizontal = 24.dp, vertical = 12.dp),
                         ) {
                             Text(
-                                "Nothing scheduled",
+                                "No tasks",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -151,6 +160,29 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
                         )
                     }
                 }
+
+                // Journal section header
+                item(key = "journal-header") {
+                    SectionLabel("Journal")
+                }
+
+                if (journalEntries.isEmpty()) {
+                    item(key = "journal-cta") {
+                        NewJournalEntryRow(onClick = { showJournalDialog = true })
+                    }
+                } else {
+                    items(journalEntries, key = { "j-${it.id}" }) { entry ->
+                        CalendarJournalRow(
+                            entry = entry,
+                            onEdit = { editingJournalEntry = entry },
+                            onDelete = { viewModel.deleteJournalEntry(entry) },
+                        )
+                    }
+                    item(key = "journal-add") {
+                        NewJournalEntryRow(onClick = { showJournalDialog = true })
+                    }
+                }
+
                 item { Spacer(modifier = Modifier.height(80.dp)) }
             }
         }
@@ -184,6 +216,165 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
             onDelete = { viewModel.deleteTask(task) },
         )
     }
+
+    if (showJournalDialog) {
+        JournalEntryDialog(
+            initial = "",
+            title = "New journal entry",
+            onDismiss = { showJournalDialog = false },
+            onConfirm = { content ->
+                viewModel.addJournalEntry(content)
+                showJournalDialog = false
+            },
+        )
+    }
+
+    editingJournalEntry?.let { entry ->
+        JournalEntryDialog(
+            initial = entry.content,
+            title = "Edit entry",
+            onDismiss = { editingJournalEntry = null },
+            onConfirm = { content ->
+                viewModel.updateJournalEntry(entry, content)
+                editingJournalEntry = null
+            },
+        )
+    }
+}
+
+@Composable
+private fun SectionLabel(title: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(32.dp)
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            text = title.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            fontSize = 10.sp,
+            letterSpacing = 2.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+            modifier = Modifier.padding(start = 24.dp),
+        )
+    }
+}
+
+@Composable
+private fun NewJournalEntryRow(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Default.Add,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f),
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = "New journal entry…",
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f),
+        )
+    }
+    HorizontalDivider(
+        modifier = Modifier.padding(horizontal = 24.dp),
+        color = MaterialTheme.colorScheme.outlineVariant,
+    )
+}
+
+@Composable
+private fun CalendarJournalRow(
+    entry: JournalEntry,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = entry.content,
+                fontSize = 13.sp,
+                letterSpacing = 0.1.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.size(8.dp))
+            Icon(
+                Icons.Outlined.Edit,
+                contentDescription = "Edit",
+                modifier = Modifier
+                    .size(16.dp)
+                    .clickable(onClick = onEdit),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            )
+            Spacer(Modifier.size(8.dp))
+            Icon(
+                Icons.Outlined.Delete,
+                contentDescription = "Delete",
+                modifier = Modifier
+                    .size(16.dp)
+                    .clickable(onClick = onDelete),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            )
+        }
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 24.dp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+    }
+}
+
+@Composable
+private fun JournalEntryDialog(
+    initial: String,
+    title: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var text by remember { mutableStateOf(initial) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                placeholder = { Text("What's on your mind?") },
+                minLines = 4,
+                maxLines = 8,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (text.isNotBlank()) onConfirm(text) },
+                enabled = text.isNotBlank(),
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
 
 @Composable
@@ -332,7 +523,6 @@ private fun DayCircle(
             )
         }
 
-        // Counts row — hidden if both zero
         if (counts != null && (counts.open > 0 || counts.closed > 0)) {
             Spacer(modifier = Modifier.height(2.dp))
             Row(
@@ -405,9 +595,7 @@ private fun MonthGrid(
     val firstOfMonth = selectedDate.withDayOfMonth(1)
     val lastOfMonth = firstOfMonth.with(TemporalAdjusters.lastDayOfMonth())
 
-    // Start grid on Monday before or on the first day of month
     val gridStart = firstOfMonth.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-    // End grid on Sunday on or after last day
     val gridEnd = lastOfMonth.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
 
     val allDays = generateSequence(gridStart) { it.plusDays(1) }
@@ -421,7 +609,6 @@ private fun MonthGrid(
             .fillMaxWidth()
             .padding(horizontal = 4.dp, vertical = 8.dp),
     ) {
-        // Day-of-week header: M T W T F S S
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,

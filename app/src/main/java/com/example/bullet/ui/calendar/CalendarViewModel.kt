@@ -3,6 +3,7 @@ package com.example.bullet.ui.calendar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bullet.data.db.BulletType
+import com.example.bullet.data.db.JournalEntry
 import com.example.bullet.data.db.Task
 import com.example.bullet.data.db.TaskStatus
 import com.example.bullet.data.repository.TaskRepository
@@ -145,6 +146,37 @@ class CalendarViewModel @Inject constructor(
     fun editTaskContent(task: Task, content: String) {
         if (content.isBlank()) return
         viewModelScope.launch { repository.updateTask(task.copy(content = content.trim())) }
+    }
+
+    // Journal entries for the currently selected day
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val journalEntriesForSelectedDate: StateFlow<List<JournalEntry>> = selectedDate
+        .flatMapLatest { date ->
+            repository.getJournalEntriesForDate(date.format(DateTimeFormatter.ISO_LOCAL_DATE))
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
+    fun addJournalEntry(content: String) {
+        viewModelScope.launch {
+            repository.insertJournalEntry(
+                JournalEntry(
+                    date = selectedDate.value.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                    content = content.trim(),
+                )
+            )
+        }
+    }
+
+    fun updateJournalEntry(entry: JournalEntry, content: String) {
+        viewModelScope.launch { repository.updateJournalEntry(entry.copy(content = content.trim())) }
+    }
+
+    fun deleteJournalEntry(entry: JournalEntry) {
+        viewModelScope.launch { repository.deleteJournalEntry(entry) }
     }
 
     fun saveTaskEdits(task: Task, content: String, date: LocalDate) {

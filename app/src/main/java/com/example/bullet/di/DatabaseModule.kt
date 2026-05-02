@@ -3,6 +3,7 @@ package com.example.bullet.di
 import android.content.Context
 import androidx.room.Room
 import com.example.bullet.data.db.AspirationDao
+import com.example.bullet.data.db.JournalEntryDao
 import com.example.bullet.data.db.NibDatabase
 import com.example.bullet.data.db.RecurringTaskDao
 import com.example.bullet.data.db.TaskDao
@@ -36,4 +37,7 @@ object DatabaseModule {
 
     @Provides
     fun provideRecurringTaskDao(db: NibDatabase): RecurringTaskDao = db.recurringTaskDao()
+
+    @Provides
+    fun provideJournalEntryDao(db: NibDatabase): JournalEntryDao = db.journalEntryDao()
 }

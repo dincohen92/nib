@@ -4,6 +4,8 @@ import android.content.Context
 import com.example.bullet.data.db.Aspiration
 import com.example.bullet.data.db.AspirationDao
 import com.example.bullet.data.db.BulletType
+import com.example.bullet.data.db.JournalEntry
+import com.example.bullet.data.db.JournalEntryDao
 import com.example.bullet.data.db.RecurringTask
 import com.example.bullet.data.db.RecurringTaskDao
 import com.example.bullet.data.db.Task
@@ -24,6 +26,7 @@ class TaskRepository @Inject constructor(
     private val taskDao: TaskDao,
     private val aspirationDao: AspirationDao,
     private val recurringTaskDao: RecurringTaskDao,
+    private val journalEntryDao: JournalEntryDao,
     @ApplicationContext private val context: Context
 ) {
 
@@ -59,6 +62,19 @@ class TaskRepository @Inject constructor(
     suspend fun insertAspiration(aspiration: Aspiration): Long = aspirationDao.insert(aspiration)
 
     suspend fun deleteAspiration(aspiration: Aspiration) = aspirationDao.delete(aspiration)
+
+    // ── Journal entries ───────────────────────────────────────────────────────
+
+    fun getAllJournalEntries(): Flow<List<JournalEntry>> = journalEntryDao.getAllEntries()
+
+    fun getJournalEntriesForDate(date: String): Flow<List<JournalEntry>> =
+        journalEntryDao.getEntriesForDate(date)
+
+    suspend fun insertJournalEntry(entry: JournalEntry): Long = journalEntryDao.insert(entry)
+
+    suspend fun updateJournalEntry(entry: JournalEntry) = journalEntryDao.update(entry)
+
+    suspend fun deleteJournalEntry(entry: JournalEntry) = journalEntryDao.delete(entry)
 
     // ── Recurring tasks ───────────────────────────────────────────────────────
 
