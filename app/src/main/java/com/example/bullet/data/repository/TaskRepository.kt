@@ -72,6 +72,9 @@ class TaskRepository @Inject constructor(
     fun getJournalEntriesForDate(date: String): Flow<List<JournalEntry>> =
         journalEntryDao.getEntriesForDate(date)
 
+    fun getJournalEntriesForDateRange(from: String, to: String): Flow<List<JournalEntry>> =
+        journalEntryDao.getEntriesForDateRange(from, to)
+
     suspend fun insertJournalEntry(entry: JournalEntry): Long = journalEntryDao.insert(entry)
 
     suspend fun updateJournalEntry(entry: JournalEntry) = journalEntryDao.update(entry)

@@ -26,7 +26,7 @@ import javax.inject.Inject
 
 enum class ViewMode { DAY, WEEK, MONTH }
 
-data class TaskCounts(val open: Int, val closed: Int)
+data class TaskCounts(val open: Int, val closed: Int, val journalCount: Int = 0)
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
@@ -60,17 +60,22 @@ class CalendarViewModel @Inject constructor(
     val taskCountsByDate: StateFlow<Map<LocalDate, TaskCounts>> =
         combine(selectedDate, viewMode) { date, mode -> visibleRange(date, mode) }
             .flatMapLatest { (from, to) ->
-                repository.getTasksForDateRange(
-                    from.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                    to.format(DateTimeFormatter.ISO_LOCAL_DATE)
-                ).map { tasks ->
-                    tasks.groupBy { LocalDate.parse(it.date) }
-                        .mapValues { (_, dayTasks) ->
-                            TaskCounts(
-                                open = dayTasks.count { it.status == TaskStatus.OPEN || it.status == TaskStatus.PUSHED },
-                                closed = dayTasks.count { it.status == TaskStatus.CLOSED }
-                            )
-                        }
+                val fromStr = from.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                val toStr = to.format(DateTimeFormatter.ISO_LOCAL_DATE)
+                combine(
+                    repository.getTasksForDateRange(fromStr, toStr),
+                    repository.getJournalEntriesForDateRange(fromStr, toStr),
+                ) { tasks, journals ->
+                    val tasksByDate = tasks.groupBy { LocalDate.parse(it.date) }
+                    val journalsByDate = journals.groupBy { LocalDate.parse(it.date) }
+                    (tasksByDate.keys + journalsByDate.keys).associateWith { d ->
+                        val dayTasks = tasksByDate[d] ?: emptyList()
+                        TaskCounts(
+                            open = dayTasks.count { it.status == TaskStatus.OPEN || it.status == TaskStatus.PUSHED },
+                            closed = dayTasks.count { it.status == TaskStatus.CLOSED },
+                            journalCount = journalsByDate[d]?.size ?: 0,
+                        )
+                    }
                 }
             }
             .stateIn(

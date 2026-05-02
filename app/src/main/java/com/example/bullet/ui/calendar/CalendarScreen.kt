@@ -1,5 +1,6 @@
 package com.example.bullet.ui.calendar
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,10 +15,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -47,7 +51,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -486,9 +489,15 @@ private fun DayCircle(
 ) {
     val today = LocalDate.now()
     val isToday = date == today
-    val green = MaterialTheme.colorScheme.primary
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onSurface = MaterialTheme.colorScheme.onSurface
     val circleSize = if (compact) 28.dp else 36.dp
+    val containerSize = if (compact) 40.dp else 48.dp
+    val ringStroke = if (compact) 2.dp else 2.5.dp
     val fontSize = if (compact) 11.sp else 14.sp
+
+    val taskColor = onSurface.copy(alpha = if (dimmed) 0.18f else 0.8f)
+    val journalColor = onSurface.copy(alpha = if (dimmed) 0.07f else 0.22f)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -507,60 +516,80 @@ private fun DayCircle(
         }
 
         val onGreen = MaterialTheme.colorScheme.onPrimary
+
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(circleSize)
-                .then(
-                    when {
-                        isToday && isSelected -> Modifier
-                            .background(green, CircleShape)
-                            .border(2.dp, MaterialTheme.colorScheme.background, CircleShape)
-                        isToday -> Modifier.background(green, CircleShape)
-                        isSelected -> Modifier
-                            .clip(CircleShape)
-                            .border(2.dp, green, CircleShape)
-                        else -> Modifier
-                    }
-                ),
+            modifier = Modifier.size(containerSize),
         ) {
-            Text(
-                text = date.dayOfMonth.toString(),
-                fontSize = fontSize,
-                fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = when {
-                    isToday -> onGreen
-                    dimmed -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                    else -> MaterialTheme.colorScheme.onSurface
-                },
-            )
-        }
+            // Activity ring
+            val taskCount = (counts?.open ?: 0) + (counts?.closed ?: 0)
+            val journalCount = counts?.journalCount ?: 0
+            if (taskCount > 0 || journalCount > 0) {
+                Canvas(modifier = Modifier.size(containerSize)) {
+                    val totalSlots = 8
+                    val gapDeg = 5f
+                    val sweepDeg = 360f / totalSlots - gapDeg
+                    val strokePx = ringStroke.toPx()
+                    val diameter = size.minDimension - strokePx
+                    val arcTopLeft = Offset(strokePx / 2f, strokePx / 2f)
+                    val arcSize = Size(diameter, diameter)
+                    val style = Stroke(width = strokePx, cap = StrokeCap.Round)
+                    val taskSlots = taskCount.coerceAtMost(totalSlots)
+                    val journalSlots = journalCount.coerceAtMost(totalSlots - taskSlots)
 
-        if (counts != null && (counts.open > 0 || counts.closed > 0)) {
-            Spacer(modifier = Modifier.height(2.dp))
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
+                    repeat(taskSlots) { i ->
+                        drawArc(
+                            color = taskColor,
+                            startAngle = -90f + i * (sweepDeg + gapDeg),
+                            sweepAngle = sweepDeg,
+                            useCenter = false,
+                            topLeft = arcTopLeft,
+                            size = arcSize,
+                            style = style,
+                        )
+                    }
+                    repeat(journalSlots) { i ->
+                        drawArc(
+                            color = journalColor,
+                            startAngle = -90f + (taskSlots + i) * (sweepDeg + gapDeg),
+                            sweepAngle = sweepDeg,
+                            useCenter = false,
+                            topLeft = arcTopLeft,
+                            size = arcSize,
+                            style = style,
+                        )
+                    }
+                }
+            }
+
+            // Date circle
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(circleSize)
+                    .then(
+                        when {
+                            isToday && isSelected -> Modifier
+                                .background(primaryColor, CircleShape)
+                                .border(2.dp, MaterialTheme.colorScheme.background, CircleShape)
+                            isToday -> Modifier.background(primaryColor, CircleShape)
+                            isSelected -> Modifier
+                                .clip(CircleShape)
+                                .border(2.dp, primaryColor, CircleShape)
+                            else -> Modifier
+                        }
+                    ),
             ) {
-                if (counts.open > 0) {
-                    Text(
-                        text = counts.open.toString(),
-                        fontSize = if (compact) 8.sp else 10.sp,
-                        color = green,
-                        fontWeight = FontWeight.Medium,
-                    )
-                }
-                if (counts.open > 0 && counts.closed > 0) {
-                    Spacer(modifier = Modifier.width(3.dp))
-                }
-                if (counts.closed > 0) {
-                    Text(
-                        text = counts.closed.toString(),
-                        fontSize = if (compact) 8.sp else 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textDecoration = TextDecoration.LineThrough,
-                    )
-                }
+                Text(
+                    text = date.dayOfMonth.toString(),
+                    fontSize = fontSize,
+                    fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = when {
+                        isToday -> onGreen
+                        dimmed -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        else -> MaterialTheme.colorScheme.onSurface
+                    },
+                )
             }
         }
     }

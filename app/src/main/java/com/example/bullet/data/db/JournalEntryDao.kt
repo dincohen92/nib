@@ -15,6 +15,9 @@ interface JournalEntryDao {
     @Query("SELECT * FROM journal_entries WHERE date = :date ORDER BY createdAt DESC")
     fun getEntriesForDate(date: String): Flow<List<JournalEntry>>
 
+    @Query("SELECT * FROM journal_entries WHERE date >= :from AND date <= :to ORDER BY date ASC")
+    fun getEntriesForDateRange(from: String, to: String): Flow<List<JournalEntry>>
+
     @Insert
     suspend fun insert(entry: JournalEntry): Long
 
