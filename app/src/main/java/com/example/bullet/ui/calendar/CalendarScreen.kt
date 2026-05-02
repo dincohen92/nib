@@ -492,8 +492,7 @@ private fun DayCircle(
     val primaryColor = MaterialTheme.colorScheme.primary
     val onSurface = MaterialTheme.colorScheme.onSurface
     val circleSize = if (compact) 28.dp else 36.dp
-    val containerSize = if (compact) 40.dp else 48.dp
-    val ringStroke = if (compact) 2.dp else 2.5.dp
+    val containerSize = if (compact) 44.dp else 54.dp
     val fontSize = if (compact) 11.sp else 14.sp
 
     val taskColor = onSurface.copy(alpha = if (dimmed) 0.18f else 0.8f)
@@ -521,7 +520,7 @@ private fun DayCircle(
             contentAlignment = Alignment.Center,
             modifier = Modifier.size(containerSize),
         ) {
-            // Activity ring
+            // Concentric activity rings: outer = tasks, inner = journals
             val taskCount = (counts?.open ?: 0) + (counts?.closed ?: 0)
             val journalCount = counts?.journalCount ?: 0
             if (taskCount > 0 || journalCount > 0) {
@@ -529,13 +528,29 @@ private fun DayCircle(
                     val totalSlots = 8
                     val gapDeg = 5f
                     val sweepDeg = 360f / totalSlots - gapDeg
-                    val strokePx = ringStroke.toPx()
-                    val diameter = size.minDimension - strokePx
-                    val arcTopLeft = Offset(strokePx / 2f, strokePx / 2f)
-                    val arcSize = Size(diameter, diameter)
-                    val style = Stroke(width = strokePx, cap = StrokeCap.Round)
+
+                    val outerStrokePx = 2.5.dp.toPx()
+                    val innerStrokePx = 2.dp.toPx()
+                    val ringGapPx = 1.dp.toPx()
+
+                    // Outer ring geometry (tasks)
+                    val outerTopLeft = Offset(outerStrokePx / 2f, outerStrokePx / 2f)
+                    val outerArcSize = Size(
+                        size.minDimension - outerStrokePx,
+                        size.minDimension - outerStrokePx,
+                    )
+                    val outerStyle = Stroke(width = outerStrokePx, cap = StrokeCap.Round)
+
+                    // Inner ring geometry (journals) — sits just inside the outer ring
+                    val outerCenterRadius = (size.minDimension - outerStrokePx) / 2f
+                    val innerCenterRadius = outerCenterRadius - outerStrokePx / 2f - ringGapPx - innerStrokePx / 2f
+                    val innerOffset = size.minDimension / 2f - innerCenterRadius
+                    val innerTopLeft = Offset(innerOffset, innerOffset)
+                    val innerArcSize = Size(innerCenterRadius * 2f, innerCenterRadius * 2f)
+                    val innerStyle = Stroke(width = innerStrokePx, cap = StrokeCap.Round)
+
                     val taskSlots = taskCount.coerceAtMost(totalSlots)
-                    val journalSlots = journalCount.coerceAtMost(totalSlots - taskSlots)
+                    val journalSlots = journalCount.coerceAtMost(totalSlots)
 
                     repeat(taskSlots) { i ->
                         drawArc(
@@ -543,20 +558,20 @@ private fun DayCircle(
                             startAngle = -90f + i * (sweepDeg + gapDeg),
                             sweepAngle = sweepDeg,
                             useCenter = false,
-                            topLeft = arcTopLeft,
-                            size = arcSize,
-                            style = style,
+                            topLeft = outerTopLeft,
+                            size = outerArcSize,
+                            style = outerStyle,
                         )
                     }
                     repeat(journalSlots) { i ->
                         drawArc(
                             color = journalColor,
-                            startAngle = -90f + (taskSlots + i) * (sweepDeg + gapDeg),
+                            startAngle = -90f + i * (sweepDeg + gapDeg),
                             sweepAngle = sweepDeg,
                             useCenter = false,
-                            topLeft = arcTopLeft,
-                            size = arcSize,
-                            style = style,
+                            topLeft = innerTopLeft,
+                            size = innerArcSize,
+                            style = innerStyle,
                         )
                     }
                 }
