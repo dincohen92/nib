@@ -19,12 +19,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.filled.AutoStories
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Loop
+import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AutoStories
-import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material.icons.outlined.Loop
+import androidx.compose.material.icons.outlined.Autorenew
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -63,9 +63,9 @@ private data class BottomNavItem(
 private val bottomNavItems = listOf(
     BottomNavItem(Screen.DailyLog, "Tasks", Icons.AutoMirrored.Filled.Assignment, Icons.AutoMirrored.Outlined.Assignment),
     BottomNavItem(Screen.Journal, "Journal", Icons.Filled.AutoStories, Icons.Outlined.AutoStories),
-    BottomNavItem(Screen.Recurring, "Habits", Icons.Filled.Loop, Icons.Outlined.Loop),
+    BottomNavItem(Screen.Recurring, "Habits", Icons.Filled.Autorenew, Icons.Outlined.Autorenew),
     BottomNavItem(Screen.Aspirations, "Aspirations", Icons.Filled.Star, Icons.Outlined.StarOutline),
-    BottomNavItem(Screen.DayView, "Calendar", Icons.Filled.DateRange, Icons.Outlined.DateRange),
+    BottomNavItem(Screen.DayView, "Calendar", Icons.Filled.CalendarMonth, Icons.Outlined.CalendarMonth),
 )
 
 @Composable
