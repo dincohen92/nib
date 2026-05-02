@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -65,7 +66,10 @@ import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 
 @Composable
-fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
+fun CalendarScreen(
+    onSettingsClick: () -> Unit = {},
+    viewModel: CalendarViewModel = hiltViewModel(),
+) {
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
     val tasks by viewModel.tasksForSelectedDate.collectAsStateWithLifecycle()
@@ -100,6 +104,7 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
                 onPrev = { viewModel.navigatePeriod(false) },
                 onNext = { viewModel.navigatePeriod(true) },
                 onToday = { viewModel.goToToday() },
+                onSettings = onSettingsClick,
             )
 
             CalendarTabStrip(
@@ -384,6 +389,7 @@ private fun CalendarHeader(
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onToday: () -> Unit,
+    onSettings: () -> Unit = {},
 ) {
     val today = LocalDate.now()
     val isToday = selectedDate == today
@@ -431,6 +437,13 @@ private fun CalendarHeader(
         )
         IconButton(onClick = onNext) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next")
+        }
+        IconButton(onClick = onSettings) {
+            Icon(
+                Icons.Outlined.Settings,
+                contentDescription = "Settings",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

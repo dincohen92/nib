@@ -79,11 +79,21 @@ fun NibApp() {
             composable(Screen.DailyLog.route) {
                 TodayScreen(onSettingsClick = { navController.navigate(Screen.Settings.route) })
             }
-            composable(Screen.Journal.route) { JournalScreen() }
-            composable(Screen.Recurring.route) { RecurringScreen() }
-            composable(Screen.Aspirations.route) { AspirationsScreen() }
-            composable(Screen.DayView.route) { CalendarScreen() }
-            composable(Screen.Settings.route) { SettingsScreen() }
+            composable(Screen.Journal.route) {
+                JournalScreen(onSettingsClick = { navController.navigate(Screen.Settings.route) })
+            }
+            composable(Screen.Recurring.route) {
+                RecurringScreen(onSettingsClick = { navController.navigate(Screen.Settings.route) })
+            }
+            composable(Screen.Aspirations.route) {
+                AspirationsScreen(onSettingsClick = { navController.navigate(Screen.Settings.route) })
+            }
+            composable(Screen.DayView.route) {
+                CalendarScreen(onSettingsClick = { navController.navigate(Screen.Settings.route) })
+            }
+            composable(Screen.Settings.route) {
+                SettingsScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }

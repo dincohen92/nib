@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -57,15 +59,49 @@ private enum class MonthlyMode { OnDay, OnThe }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RecurringScreen(viewModel: RecurringViewModel = hiltViewModel()) {
+fun RecurringScreen(
+    onSettingsClick: () -> Unit = {},
+    viewModel: RecurringViewModel = hiltViewModel(),
+) {
     val rules by viewModel.rules.collectAsStateWithLifecycle()
     var showAddSheet by remember { mutableStateOf(false) }
     var editingRule by remember { mutableStateOf<RecurringTask?>(null) }
     var actionTarget by remember { mutableStateOf<RecurringTask?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .background(MaterialTheme.colorScheme.surface),
+            ) {
+                Text(
+                    text = "Habits",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = 24.dp),
+                )
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                ) {
+                    Icon(
+                        Icons.Outlined.Settings,
+                        contentDescription = "Settings",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                HorizontalDivider(
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
+            }
+
         if (rules.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Text(
                     text = "No recurring tasks.\nTap + to create one.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -74,7 +110,7 @@ fun RecurringScreen(viewModel: RecurringViewModel = hiltViewModel()) {
                 )
             }
         } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 items(rules, key = { it.id }) { rule ->
                     RecurringRuleRow(
                         rule = rule,
@@ -84,6 +120,8 @@ fun RecurringScreen(viewModel: RecurringViewModel = hiltViewModel()) {
                 }
                 item { Spacer(modifier = Modifier.height(80.dp)) }
             }
+        }
+
         }
 
         FloatingActionButton(
