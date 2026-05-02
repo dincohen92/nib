@@ -14,6 +14,7 @@ interface TaskDao {
         SELECT * FROM tasks WHERE date = :date
         ORDER BY
             CASE status WHEN 'PUSHED' THEN 0 WHEN 'OPEN' THEN 1 ELSE 2 END ASC,
+            CASE priority WHEN 'HIGH' THEN 0 ELSE 1 END ASC,
             createdAt ASC
     """)
     fun getTasksForDate(date: String): Flow<List<Task>>
@@ -38,6 +39,10 @@ interface TaskDao {
 
     @Query("SELECT * FROM tasks WHERE date = :date AND recurringTaskId = :recurringId LIMIT 1")
     suspend fun getTaskForDateAndRecurringId(date: String, recurringId: Long): Task?
+
+    /** Count open/pushed tasks from before [date] (tasks that will be migrated). */
+    @Query("SELECT COUNT(*) FROM tasks WHERE status IN ('OPEN', 'PUSHED') AND date < :date")
+    suspend fun countOpenTasksBeforeDate(date: String): Int
 
     /** Migrate all incomplete (OPEN or PUSHED) tasks from before [toDate] to [toDate] as PUSHED. */
     @Query("UPDATE tasks SET date = :toDate, status = 'PUSHED' WHERE status IN ('OPEN', 'PUSHED') AND date < :toDate")

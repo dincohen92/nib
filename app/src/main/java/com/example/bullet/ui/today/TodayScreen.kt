@@ -12,9 +12,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,7 +40,10 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun TodayScreen(viewModel: CalendarViewModel = hiltViewModel()) {
+fun TodayScreen(
+    onSettingsClick: () -> Unit = {},
+    viewModel: CalendarViewModel = hiltViewModel(),
+) {
     val tasks by viewModel.tasksForSelectedDate.collectAsStateWithLifecycle()
     val today = LocalDate.now()
 
@@ -63,6 +68,16 @@ fun TodayScreen(viewModel: CalendarViewModel = hiltViewModel()) {
                         .align(Alignment.CenterStart)
                         .padding(start = 24.dp),
                 )
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Settings,
+                        contentDescription = "Settings",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 HorizontalDivider(
                     modifier = Modifier.align(Alignment.BottomCenter),
                     color = MaterialTheme.colorScheme.outlineVariant,
@@ -116,8 +131,8 @@ fun TodayScreen(viewModel: CalendarViewModel = hiltViewModel()) {
         AddEntrySheet(
             defaultDate = today,
             onDismiss = { showAddSheet = false },
-            onAdd = { content, date ->
-                viewModel.addTask(content, date)
+            onAdd = { content, date, priority ->
+                viewModel.addTask(content, date, priority)
                 showAddSheet = false
             },
         )
@@ -127,7 +142,7 @@ fun TodayScreen(viewModel: CalendarViewModel = hiltViewModel()) {
         TaskActionSheet(
             task = task,
             onDismiss = { selectedTask = null },
-            onSave = { content, date -> viewModel.saveTaskEdits(task, content, date) },
+            onSave = { content, date, priority -> viewModel.saveTaskEdits(task, content, date, priority) },
             onDelete = { viewModel.deleteTask(task) },
         )
     }

@@ -6,6 +6,7 @@ import com.example.bullet.data.db.AspirationDao
 import com.example.bullet.data.db.JournalEntryDao
 import com.example.bullet.data.db.MIGRATION_4_5
 import com.example.bullet.data.db.MIGRATION_5_6
+import com.example.bullet.data.db.MIGRATION_6_7
 import com.example.bullet.data.db.NibDatabase
 import com.example.bullet.data.db.RecurringTaskDao
 import com.example.bullet.data.db.TaskDao
@@ -28,7 +29,7 @@ object DatabaseModule {
             NibDatabase::class.java,
             "bullet.db"
         )
-            .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
+            .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
             .fallbackToDestructiveMigration(true)
             .build()
 

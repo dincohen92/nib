@@ -47,6 +47,7 @@ import com.example.bullet.ui.aspirations.AspirationsScreen
 import com.example.bullet.ui.calendar.CalendarScreen
 import com.example.bullet.ui.journal.JournalScreen
 import com.example.bullet.ui.recurring.RecurringScreen
+import com.example.bullet.ui.settings.SettingsScreen
 import com.example.bullet.ui.today.TodayScreen
 
 private data class BottomNavItem(
@@ -75,11 +76,14 @@ fun NibApp() {
             startDestination = Screen.DailyLog.route,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(Screen.DailyLog.route) { TodayScreen() }
+            composable(Screen.DailyLog.route) {
+                TodayScreen(onSettingsClick = { navController.navigate(Screen.Settings.route) })
+            }
             composable(Screen.Journal.route) { JournalScreen() }
             composable(Screen.Recurring.route) { RecurringScreen() }
             composable(Screen.Aspirations.route) { AspirationsScreen() }
             composable(Screen.DayView.route) { CalendarScreen() }
+            composable(Screen.Settings.route) { SettingsScreen() }
         }
     }
 }

@@ -12,6 +12,7 @@ import com.example.bullet.data.db.Task
 import com.example.bullet.data.db.TaskDao
 import com.example.bullet.data.db.TaskStatus
 import com.example.bullet.data.db.shouldFireOn
+import com.example.bullet.notifications.postPushedTasksNotification
 import com.example.bullet.widget.NibWidget
 import androidx.glance.appwidget.updateAll
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,6 +28,7 @@ class TaskRepository @Inject constructor(
     private val aspirationDao: AspirationDao,
     private val recurringTaskDao: RecurringTaskDao,
     private val journalEntryDao: JournalEntryDao,
+    private val settingsRepository: SettingsRepository,
     @ApplicationContext private val context: Context
 ) {
 
@@ -90,7 +92,12 @@ class TaskRepository @Inject constructor(
 
     suspend fun migratePastOpenTasks() {
         val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        // Count tasks that will be pushed (open/pushed tasks before today)
+        val pushedCount = taskDao.countOpenTasksBeforeDate(today)
         taskDao.migrateOpenTasksToDate(today)
+        if (pushedCount > 0 && settingsRepository.pushedTasksNotification) {
+            postPushedTasksNotification(context, pushedCount)
+        }
         notifyWidget()
     }
 

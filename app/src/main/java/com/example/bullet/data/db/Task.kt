@@ -3,6 +3,8 @@ package com.example.bullet.data.db
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+enum class Priority { NONE, HIGH }
+
 @Entity(tableName = "tasks")
 data class Task(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -14,4 +16,5 @@ data class Task(
     val createdAt: Long = System.currentTimeMillis(),
     /** Non-null when this task was auto-generated from a RecurringTask rule. */
     val recurringTaskId: Long? = null,
+    val priority: Priority = Priority.NONE,
 )

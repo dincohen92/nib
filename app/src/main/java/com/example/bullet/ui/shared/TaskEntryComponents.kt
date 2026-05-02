@@ -16,12 +16,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +47,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.example.bullet.data.db.Priority
 import com.example.bullet.data.db.Task
 import com.example.bullet.data.db.TaskStatus
 import java.time.Instant
@@ -115,8 +118,19 @@ fun TaskRow(
             style = MaterialTheme.typography.bodyLarge,
             color = textColor,
             textDecoration = if (isDone) TextDecoration.LineThrough else TextDecoration.None,
-            modifier = Modifier.padding(start = 12.dp),
+            modifier = Modifier
+                .padding(start = 12.dp)
+                .weight(1f),
         )
+        if (task.priority == Priority.HIGH) {
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = Icons.Filled.PriorityHigh,
+                contentDescription = "High priority",
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(14.dp),
+            )
+        }
     }
     HorizontalDivider(
         modifier = Modifier.padding(horizontal = 20.dp),
@@ -130,11 +144,12 @@ fun TaskRow(
 fun TaskActionSheet(
     task: Task,
     onDismiss: () -> Unit,
-    onSave: (content: String, date: LocalDate) -> Unit,
+    onSave: (content: String, date: LocalDate, priority: Priority) -> Unit,
     onDelete: () -> Unit,
 ) {
     var content by remember { mutableStateOf(task.content) }
     var pickedDate by remember { mutableStateOf(LocalDate.parse(task.date)) }
+    var isHighPriority by remember { mutableStateOf(task.priority == Priority.HIGH) }
     var showDatePicker by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -166,6 +181,15 @@ fun TaskActionSheet(
                 },
             )
 
+            FilterChip(
+                selected = isHighPriority,
+                onClick = { isHighPriority = !isHighPriority },
+                label = { Text("High priority") },
+                leadingIcon = if (isHighPriority) {
+                    { Icon(Icons.Filled.PriorityHigh, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                } else null,
+            )
+
             Spacer(modifier = Modifier.height(4.dp))
 
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -181,13 +205,15 @@ fun TaskActionSheet(
                 Button(
                     onClick = {
                         if (content.isNotBlank()) {
-                            onSave(content, pickedDate)
+                            val priority = if (isHighPriority) Priority.HIGH else Priority.NONE
+                            onSave(content, pickedDate, priority)
                             onDismiss()
                         }
                     },
                     modifier = Modifier.weight(1f),
                     enabled = content.isNotBlank() &&
-                        (content.trim() != task.content || pickedDate.toString() != task.date),
+                        (content.trim() != task.content || pickedDate.toString() != task.date ||
+                            isHighPriority != (task.priority == Priority.HIGH)),
                 ) {
                     Text("Save")
                 }
@@ -222,11 +248,12 @@ fun TaskActionSheet(
 @Composable
 fun AddEntrySheet(
     onDismiss: () -> Unit,
-    onAdd: (content: String, date: LocalDate) -> Unit,
+    onAdd: (content: String, date: LocalDate, priority: Priority) -> Unit,
     defaultDate: LocalDate = LocalDate.now(),
 ) {
     var content by remember { mutableStateOf("") }
     var pickedDate by remember { mutableStateOf(defaultDate) }
+    var isHighPriority by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -259,8 +286,22 @@ fun AddEntrySheet(
                 },
             )
 
+            FilterChip(
+                selected = isHighPriority,
+                onClick = { isHighPriority = !isHighPriority },
+                label = { Text("High priority") },
+                leadingIcon = if (isHighPriority) {
+                    { Icon(Icons.Filled.PriorityHigh, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                } else null,
+            )
+
             Button(
-                onClick = { if (content.isNotBlank()) onAdd(content.trim(), pickedDate) },
+                onClick = {
+                    if (content.isNotBlank()) {
+                        val priority = if (isHighPriority) Priority.HIGH else Priority.NONE
+                        onAdd(content.trim(), pickedDate, priority)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = content.isNotBlank(),
             ) {

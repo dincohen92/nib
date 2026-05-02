@@ -60,3 +60,6 @@
 -keep class * extends androidx.work.ListenableWorker {
     public <init>(android.content.Context, androidx.work.WorkerParameters);
 }
+
+# ── WorkManager ───────────────────────────────────────────────────────────────
+-keep class androidx.work.** { *; }

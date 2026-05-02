@@ -21,4 +21,10 @@ class Converters {
 
     @TypeConverter
     fun toFrequency(value: String): Frequency = Frequency.valueOf(value)
+
+    @TypeConverter
+    fun fromPriority(value: Priority): String = value.name
+
+    @TypeConverter
+    fun toPriority(value: String): Priority = Priority.valueOf(value)
 }

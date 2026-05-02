@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bullet.data.db.BulletType
 import com.example.bullet.data.db.JournalEntry
+import com.example.bullet.data.db.Priority
 import com.example.bullet.data.db.Task
 import com.example.bullet.data.db.TaskStatus
 import com.example.bullet.data.repository.TaskRepository
@@ -118,7 +119,7 @@ class CalendarViewModel @Inject constructor(
         selectedDate.value = LocalDate.now()
     }
 
-    fun addTask(content: String, date: LocalDate) {
+    fun addTask(content: String, date: LocalDate, priority: Priority = Priority.NONE) {
         viewModelScope.launch {
             repository.insertTask(
                 Task(
@@ -126,6 +127,7 @@ class CalendarViewModel @Inject constructor(
                     bulletType = BulletType.TASK,
                     status = TaskStatus.OPEN,
                     date = date.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                    priority = priority,
                 )
             )
         }
@@ -179,13 +181,14 @@ class CalendarViewModel @Inject constructor(
         viewModelScope.launch { repository.deleteJournalEntry(entry) }
     }
 
-    fun saveTaskEdits(task: Task, content: String, date: LocalDate) {
+    fun saveTaskEdits(task: Task, content: String, date: LocalDate, priority: Priority = Priority.NONE) {
         if (content.isBlank()) return
         viewModelScope.launch {
             repository.updateTask(
                 task.copy(
                     content = content.trim(),
                     date = date.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                    priority = priority,
                 )
             )
         }

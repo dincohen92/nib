@@ -201,8 +201,8 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
         AddEntrySheet(
             defaultDate = selectedDate,
             onDismiss = { showAddSheet = false },
-            onAdd = { content, date ->
-                viewModel.addTask(content, date)
+            onAdd = { content, date, priority ->
+                viewModel.addTask(content, date, priority)
                 showAddSheet = false
             },
         )
@@ -212,7 +212,7 @@ fun CalendarScreen(viewModel: CalendarViewModel = hiltViewModel()) {
         TaskActionSheet(
             task = task,
             onDismiss = { selectedTask = null },
-            onSave = { content, date -> viewModel.saveTaskEdits(task, content, date) },
+            onSave = { content, date, priority -> viewModel.saveTaskEdits(task, content, date, priority) },
             onDelete = { viewModel.deleteTask(task) },
         )
     }
