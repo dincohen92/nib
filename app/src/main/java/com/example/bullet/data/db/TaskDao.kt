@@ -10,7 +10,12 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TaskDao {
 
-    @Query("SELECT * FROM tasks WHERE date = :date ORDER BY createdAt ASC")
+    @Query("""
+        SELECT * FROM tasks WHERE date = :date
+        ORDER BY
+            CASE status WHEN 'PUSHED' THEN 0 WHEN 'OPEN' THEN 1 ELSE 2 END ASC,
+            createdAt ASC
+    """)
     fun getTasksForDate(date: String): Flow<List<Task>>
 
     @Query("SELECT * FROM tasks WHERE date >= :from AND date <= :to ORDER BY date ASC, createdAt ASC")
