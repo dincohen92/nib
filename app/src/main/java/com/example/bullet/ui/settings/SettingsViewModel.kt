@@ -11,6 +11,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -37,14 +39,23 @@ class SettingsViewModel @Inject constructor(
 
         val workManager = WorkManager.getInstance(context)
         if (enabled) {
-            val request = PeriodicWorkRequestBuilder<DailyReminderWorker>(1, TimeUnit.DAYS).build()
+            val request = PeriodicWorkRequestBuilder<DailyReminderWorker>(1, TimeUnit.DAYS)
+                .setInitialDelay(millisUntilNextEightAm(), TimeUnit.MILLISECONDS)
+                .build()
             workManager.enqueueUniquePeriodicWork(
                 "daily_reminder",
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
                 request,
             )
         } else {
             workManager.cancelUniqueWork("daily_reminder")
         }
+    }
+
+    private fun millisUntilNextEightAm(): Long {
+        val now = LocalDateTime.now()
+        var next = now.toLocalDate().atTime(8, 0)
+        if (!next.isAfter(now)) next = next.plusDays(1)
+        return ChronoUnit.MILLIS.between(now, next)
     }
 }

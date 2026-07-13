@@ -21,6 +21,9 @@ class DailyReminderWorker(
             .fromApplication(appContext, WidgetEntryPoint::class.java)
             .taskRepository()
 
+        repository.migratePastOpenTasks()
+        repository.generateRecurringTasksForToday()
+
         val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
         val openCount = repository
             .getTasksForDate(today)
