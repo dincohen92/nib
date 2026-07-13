@@ -30,6 +30,13 @@ class NibApplication : Application() {
                     NotificationManager.IMPORTANCE_DEFAULT,
                 )
             )
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    "nib_journal",
+                    "Journal reminder",
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                )
+            )
         }
     }
 }

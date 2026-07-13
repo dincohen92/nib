@@ -81,6 +81,9 @@ class TaskRepository @Inject constructor(
 
     suspend fun deleteJournalEntry(entry: JournalEntry) = journalEntryDao.delete(entry)
 
+    suspend fun hasJournalEntryForDate(date: String): Boolean =
+        journalEntryDao.countForDate(date) > 0
+
     // ── Recurring tasks ───────────────────────────────────────────────────────
 
     fun getAllRecurringTasks(): Flow<List<RecurringTask>> = recurringTaskDao.getAll()

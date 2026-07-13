@@ -10,6 +10,7 @@ import com.example.bullet.R
 
 private const val PUSHED_NOTIFICATION_ID = 1001
 private const val REMINDER_NOTIFICATION_ID = 1002
+private const val JOURNAL_NOTIFICATION_ID = 1003
 
 fun postPushedTasksNotification(context: Context, count: Int) {
     val intent = Intent(context, MainActivity::class.java).apply {
@@ -53,4 +54,25 @@ fun postDailyReminderNotification(context: Context, openCount: Int) {
 
     val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     manager.notify(REMINDER_NOTIFICATION_ID, notification)
+}
+
+fun postJournalReminderNotification(context: Context) {
+    val intent = Intent(context, MainActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    }
+    val pendingIntent = PendingIntent.getActivity(
+        context, 0, intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
+    val notification = NotificationCompat.Builder(context, "nib_journal")
+        .setSmallIcon(R.mipmap.ic_launcher)
+        .setContentTitle("Journal check-in")
+        .setContentText("You haven't written today — tap to add an entry")
+        .setContentIntent(pendingIntent)
+        .setAutoCancel(true)
+        .build()
+
+    val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    manager.notify(JOURNAL_NOTIFICATION_ID, notification)
 }

@@ -36,6 +36,7 @@ fun SettingsScreen(
 ) {
     val pushedTasksEnabled by viewModel.pushedTasksNotification.collectAsStateWithLifecycle()
     val dailyReminderEnabled by viewModel.dailyReminder.collectAsStateWithLifecycle()
+    val journalReminderEnabled by viewModel.journalReminder.collectAsStateWithLifecycle()
 
     val permissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -98,6 +99,27 @@ fun SettingsScreen(
                             permissionLauncher?.launch(Manifest.permission.POST_NOTIFICATIONS)
                         }
                         viewModel.setDailyReminder(enabled)
+                    },
+                )
+            },
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+
+        ListItem(
+            headlineContent = { Text("Journal reminder") },
+            supportingContent = { Text("Remind at 6pm if you haven't written today") },
+            trailingContent = {
+                Switch(
+                    checked = journalReminderEnabled,
+                    onCheckedChange = { enabled ->
+                        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            permissionLauncher?.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        viewModel.setJournalReminder(enabled)
                     },
                 )
             },

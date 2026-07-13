@@ -2,8 +2,11 @@ package com.example.bullet.ui.journal
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -46,7 +50,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.bullet.data.db.Feeling
 import com.example.bullet.data.db.JournalEntry
+import com.example.bullet.data.db.toFeelingSet
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -172,10 +178,11 @@ fun JournalScreen(
     if (showAddDialog) {
         JournalEntryDialog(
             initial = "",
+            initialFeelings = emptySet(),
             title = "New entry",
             onDismiss = { showAddDialog = false },
-            onConfirm = { content ->
-                viewModel.addEntry(content, LocalDate.now().format(isoFormatter))
+            onConfirm = { content, feelings ->
+                viewModel.addEntry(content, LocalDate.now().format(isoFormatter), feelings)
                 showAddDialog = false
             },
         )
@@ -184,10 +191,11 @@ fun JournalScreen(
     editingEntry?.let { entry ->
         JournalEntryDialog(
             initial = entry.content,
+            initialFeelings = entry.feelings.toFeelingSet(),
             title = "Edit entry",
             onDismiss = { editingEntry = null },
-            onConfirm = { content ->
-                viewModel.updateEntry(entry, content)
+            onConfirm = { content, feelings ->
+                viewModel.updateEntry(entry, content, feelings)
                 editingEntry = null
             },
         )
@@ -255,15 +263,28 @@ private fun JournalEntryRow(
             )
             Spacer(Modifier.size(12.dp))
         }
-        Text(
-            text = entry.content,
-            fontSize = 13.sp,
-            letterSpacing = 0.1.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        val feelings = remember(entry.feelings) { entry.feelings.toFeelingSet() }
+        Row(
             modifier = Modifier.padding(start = 24.dp, end = 48.dp, top = 4.dp),
-        )
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = entry.content,
+                fontSize = 13.sp,
+                letterSpacing = 0.1.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            if (feelings.isNotEmpty()) {
+                Text(
+                    text = feelings.joinToString("") { it.emoji },
+                    fontSize = 12.sp,
+                )
+            }
+        }
         Spacer(Modifier.weight(1f))
         HorizontalDivider(
             modifier = Modifier.padding(horizontal = 24.dp),
@@ -286,6 +307,8 @@ private fun JournalEntryViewSheet(
     }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    val feelings = remember(entry.feelings) { entry.feelings.toFeelingSet() }
+
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier
@@ -298,6 +321,19 @@ private fun JournalEntryViewSheet(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (feelings.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    feelings.forEach { feeling ->
+                        Text(
+                            text = "${feeling.emoji} ${feeling.label}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = entry.content,
@@ -326,31 +362,52 @@ private fun JournalEntryViewSheet(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun JournalEntryDialog(
     initial: String,
+    initialFeelings: Set<Feeling>,
     title: String,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
+    onConfirm: (String, Set<Feeling>) -> Unit,
 ) {
     var text by remember { mutableStateOf(initial) }
+    var selectedFeelings by remember { mutableStateOf(initialFeelings) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                placeholder = { Text("What's on your mind?") },
-                minLines = 4,
-                maxLines = 8,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Column {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    placeholder = { Text("What's on your mind?") },
+                    minLines = 4,
+                    maxLines = 8,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Feeling.entries.forEach { feeling ->
+                        val selected = feeling in selectedFeelings
+                        FilterChip(
+                            selected = selected,
+                            onClick = {
+                                selectedFeelings = if (selected)
+                                    selectedFeelings - feeling
+                                else
+                                    selectedFeelings + feeling
+                            },
+                            label = { Text("${feeling.emoji} ${feeling.label}") },
+                        )
+                    }
+                }
+            }
         },
         confirmButton = {
             TextButton(
-                onClick = { if (text.isNotBlank()) onConfirm(text) },
+                onClick = { if (text.isNotBlank()) onConfirm(text, selectedFeelings) },
                 enabled = text.isNotBlank(),
             ) { Text("Save") }
         },

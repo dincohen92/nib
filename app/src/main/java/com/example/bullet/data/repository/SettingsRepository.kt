@@ -18,4 +18,8 @@ class SettingsRepository @Inject constructor(
     var dailyReminder: Boolean
         get() = prefs.getBoolean("daily_reminder", false)
         set(value) = prefs.edit().putBoolean("daily_reminder", value).apply()
+
+    var journalReminder: Boolean
+        get() = prefs.getBoolean("journal_reminder", false)
+        set(value) = prefs.edit().putBoolean("journal_reminder", value).apply()
 }

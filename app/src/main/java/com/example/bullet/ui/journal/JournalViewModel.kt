@@ -2,7 +2,9 @@ package com.example.bullet.ui.journal
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.bullet.data.db.Feeling
 import com.example.bullet.data.db.JournalEntry
+import com.example.bullet.data.db.toFeelingString
 import com.example.bullet.data.repository.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,15 +26,17 @@ class JournalViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    fun addEntry(content: String, date: String) {
+    fun addEntry(content: String, date: String, feelings: Set<Feeling> = emptySet()) {
         viewModelScope.launch {
-            repository.insertJournalEntry(JournalEntry(date = date, content = content.trim()))
+            repository.insertJournalEntry(
+                JournalEntry(date = date, content = content.trim(), feelings = feelings.toFeelingString())
+            )
         }
     }
 
-    fun updateEntry(entry: JournalEntry, newContent: String) {
+    fun updateEntry(entry: JournalEntry, newContent: String, feelings: Set<Feeling> = emptySet()) {
         viewModelScope.launch {
-            repository.updateJournalEntry(entry.copy(content = newContent.trim()))
+            repository.updateJournalEntry(entry.copy(content = newContent.trim(), feelings = feelings.toFeelingString()))
         }
     }
 
